@@ -1,7 +1,9 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { ThemeProvider } from "@/core/theme/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/sidebar/app-sidebar";
+import { PageHeader } from "@/components/sidebar/page-header";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -10,12 +12,21 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-background">
-        <div className="absolute top-4 right-4 z-10">
-          <ThemeToggle />
-        </div>
-        <Outlet />
-      </div>
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": "16rem",
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar />
+        <SidebarInset>
+          <PageHeader />
+          <div className="flex flex-1 flex-col gap-4 p-4">
+            <Outlet />
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
       {import.meta.env.DEV && <TanStackRouterDevtools />}
     </ThemeProvider>
   );
