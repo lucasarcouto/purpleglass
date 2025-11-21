@@ -1,15 +1,37 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { ThemeProvider } from "@/core/theme/theme-provider";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { PageHeader } from "@/components/sidebar/page-header";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createRootRoute({
   component: RootComponent,
 });
 
 function RootComponent() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <ThemeProvider>
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </ThemeProvider>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <ThemeProvider>
+        <div className="min-h-screen flex flex-col">
+          <Outlet />
+        </div>
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider>
       <SidebarProvider
@@ -27,7 +49,6 @@ function RootComponent() {
           </div>
         </SidebarInset>
       </SidebarProvider>
-      {import.meta.env.DEV && <TanStackRouterDevtools />}
     </ThemeProvider>
   );
 }

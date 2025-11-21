@@ -13,6 +13,7 @@ dist-ssr
 *.local
 
 # TanStack Router
+.tanstack/
 routeTree.gen.ts
 
 # Editor directories and files
