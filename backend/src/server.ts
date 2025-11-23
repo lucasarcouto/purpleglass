@@ -1,6 +1,8 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import authRoutes from "@/routes/auth.js";
+import notesRoutes from "@/routes/notes.js";
+import uploadRoutes from "@/routes/upload.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,6 +30,12 @@ app.get("/api/data", (_req: Request, res: Response) => {
 
 // Authentication routes
 app.use("/api/auth", authRoutes);
+
+// Notes routes
+app.use("/api/notes", notesRoutes);
+
+// Upload routes
+app.use("/api/upload", uploadRoutes);
 
 // Start server
 app.listen(PORT, () => {

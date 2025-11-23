@@ -36,8 +36,46 @@ class ApiClient {
     });
   }
 
-  async delete<T>(endpoint: ApiEndpoint): Promise<T> {
-    return this.request<T>(endpoint, { method: "DELETE" });
+  async patch<T>(endpoint: string, data?: unknown): Promise<T> {
+    return this.request<T>(endpoint as ApiEndpoint, {
+      method: "PATCH",
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  async delete<T>(endpoint: ApiEndpoint, data?: unknown): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "DELETE",
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  async upload<T>(endpoint: ApiEndpoint, file: File): Promise<T> {
+    const token = this.getAuthToken();
+    const formData = new FormData();
+
+    formData.append("file", file);
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json().catch(() => ({
+        error: "Unknown Error",
+        message: "An unknown error occurred",
+      }));
+      throw new Error(error.message || "Upload failed");
+    }
+
+    return response.json();
   }
 
   private getAuthToken(): string | null {

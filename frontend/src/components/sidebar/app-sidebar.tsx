@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Home, Settings, FileText } from "lucide-react";
+import { Home, Settings, FileText, NotebookPen } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +19,11 @@ const sidebarItems = {
       title: "Home",
       url: "/",
       icon: Home,
+    },
+    {
+      title: "Notes",
+      url: "/notes",
+      icon: NotebookPen,
     },
     {
       title: "Documents",
