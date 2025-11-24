@@ -65,6 +65,7 @@ export function SignInPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
+              autoComplete="off"
             />
           </div>
 

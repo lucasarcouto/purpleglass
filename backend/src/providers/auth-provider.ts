@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { prisma } from "@/core/database/client.js";
 import { TokenPayload, UserData } from "@/types.js";
+import { auditLogProvider } from "@/providers/audit-log-provider.js";
 
 class AuthProvider {
   /**
@@ -10,6 +11,8 @@ class AuthProvider {
    * @param email - User's email address
    * @param password - Plain text password (will be hashed before storing in the database)
    * @param name - User's full name
+   * @param ipAddress - Optional IP address of the user
+   * @param userAgent - Optional user agent string
    *
    * @returns JWT token and sanitized user data
    *
@@ -18,7 +21,9 @@ class AuthProvider {
   async createUser(
     email: string,
     password: string,
-    name: string
+    name: string,
+    ipAddress?: string,
+    userAgent?: string
   ): Promise<UserData> {
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
@@ -33,6 +38,20 @@ class AuthProvider {
         email,
         password: hashedPassword,
         name,
+      },
+    });
+
+    // Log the registration event
+    await auditLogProvider.log({
+      userId: user.id,
+      action: "register",
+      resourceType: "user",
+      resourceId: user.id.toString(),
+      ipAddress,
+      userAgent,
+      metadata: {
+        email: user.email,
+        name: user.name,
       },
     });
 
@@ -53,12 +72,19 @@ class AuthProvider {
    *
    * @param email - User's email address
    * @param password - Plain text password to verify
+   * @param ipAddress - Optional IP address of the user
+   * @param userAgent - Optional user agent string
    *
    * @returns JWT token and sanitized user data
    *
    * @throws Error if credentials are invalid
    */
-  async authenticateUser(email: string, password: string): Promise<UserData> {
+  async authenticateUser(
+    email: string,
+    password: string,
+    ipAddress?: string,
+    userAgent?: string
+  ): Promise<UserData> {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
@@ -70,6 +96,19 @@ class AuthProvider {
     if (!isValidPassword) {
       throw new Error("Invalid credentials");
     }
+
+    // Log the login event
+    await auditLogProvider.log({
+      userId: user.id,
+      action: "login",
+      resourceType: "user",
+      resourceId: user.id.toString(),
+      ipAddress,
+      userAgent,
+      metadata: {
+        email: user.email,
+      },
+    });
 
     const token = this.generateToken(user.id, user.email);
 

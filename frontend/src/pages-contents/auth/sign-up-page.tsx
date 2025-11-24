@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function SignUpPage() {
   const { register } = useAuth();
@@ -11,15 +12,34 @@ export function SignUpPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedPrivacyPolicy, setAcceptedPrivacyPolicy] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
 
+  const isSignUpButtonDisabled =
+    isLoading ||
+    !acceptedPrivacyPolicy ||
+    !acceptedTerms ||
+    !name ||
+    !email ||
+    !password;
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
     setError(null);
+
+    // Validate consent
+    if (!acceptedPrivacyPolicy || !acceptedTerms) {
+      setError(
+        "You must accept the Privacy Policy and Terms of Service to create an account"
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -80,7 +100,62 @@ export function SignUpPage() {
               required
               minLength={8}
               disabled={isLoading}
+              autoComplete="off"
             />
+          </div>
+
+          <div className="flex flex-col gap-3 pt-2">
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="privacy-policy"
+                checked={acceptedPrivacyPolicy}
+                onCheckedChange={(checked) =>
+                  setAcceptedPrivacyPolicy(checked === true)
+                }
+                disabled={isLoading}
+                required
+              />
+              <label
+                htmlFor="privacy-policy"
+                className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                I agree to the{" "}
+                <Link
+                  to="/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Privacy Policy
+                </Link>
+              </label>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="terms-of-service"
+                checked={acceptedTerms}
+                onCheckedChange={(checked) =>
+                  setAcceptedTerms(checked === true)
+                }
+                disabled={isLoading}
+                required
+              />
+              <label
+                htmlFor="terms-of-service"
+                className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                I agree to the{" "}
+                <Link
+                  to="/terms-of-service"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Terms of Service
+                </Link>
+              </label>
+            </div>
           </div>
 
           {error && (
@@ -89,7 +164,11 @@ export function SignUpPage() {
             </p>
           )}
 
-          <Button type="submit" disabled={isLoading} className="w-full">
+          <Button
+            type="submit"
+            disabled={isSignUpButtonDisabled}
+            className="w-full"
+          >
             {isLoading ? "Creating account..." : "Create account"}
           </Button>
         </form>

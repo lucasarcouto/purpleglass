@@ -1,7 +1,12 @@
 import { Router, Request, Response } from "express";
 import { authProvider } from "@/providers/auth-provider.js";
 import { authMiddleware } from "@/middleware/auth.js";
+import {
+  loginRateLimiter,
+  registerRateLimiter,
+} from "@/middleware/rate-limit.js";
 import { prisma } from "@/core/database/client.js";
+import { auditLogProvider } from "@/providers/audit-log-provider.js";
 
 const router = Router();
 
@@ -14,54 +19,89 @@ const router = Router();
  *
  * Returns: UserData
  */
-router.post("/register", async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email, password, name } = req.body;
+router.post(
+  "/register",
+  registerRateLimiter,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      let { email, password, name } = req.body;
 
-    if (!email || !password || !name) {
-      res.status(400).json({
-        error: "Validation Error",
-        message: "Email, password, and name are required",
+      // Validate that all fields are present
+      if (!email || !password || !name) {
+        res.status(400).json({
+          error: "Validation Error",
+          message: "Email, password, and name are required",
+        });
+        return;
+      }
+
+      // Reject objects and arrays to prevent "[object Object]" coercion
+      if (
+        typeof email === "object" ||
+        typeof password === "object" ||
+        typeof name === "object"
+      ) {
+        res.status(400).json({
+          error: "Validation Error",
+          message: "Email, password, and name are not valid",
+        });
+        return;
+      }
+
+      // Coerce to strings (handles numbers, booleans gracefully)
+      email = String(email);
+      password = String(password);
+      name = String(name);
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!emailRegex.test(email)) {
+        res.status(400).json({
+          error: "Validation Error",
+          message: "Invalid email format",
+        });
+        return;
+      }
+
+      if (password.length < 8) {
+        res.status(400).json({
+          error: "Validation Error",
+          message: "Password must be at least 8 characters long",
+        });
+        return;
+      }
+
+      // Extract IP address and user agent
+      const ipAddress =
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+        req.socket.remoteAddress;
+      const userAgent = req.headers["user-agent"];
+
+      const result = await authProvider.createUser(
+        email,
+        password,
+        name,
+        ipAddress,
+        userAgent
+      );
+
+      res.status(201).json(result);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Email already exists") {
+        res.status(409).json({
+          error: "Conflict",
+          message: "Email already exists",
+        });
+        return;
+      }
+
+      res.status(500).json({
+        error: "Internal Server Error",
+        message: "Failed to create user",
       });
-      return;
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(email)) {
-      res.status(400).json({
-        error: "Validation Error",
-        message: "Invalid email format",
-      });
-      return;
-    }
-
-    if (password.length < 8) {
-      res.status(400).json({
-        error: "Validation Error",
-        message: "Password must be at least 8 characters long",
-      });
-      return;
-    }
-
-    const result = await authProvider.createUser(email, password, name);
-
-    res.status(201).json(result);
-  } catch (error) {
-    if (error instanceof Error && error.message === "Email already exists") {
-      res.status(409).json({
-        error: "Conflict",
-        message: "Email already exists",
-      });
-      return;
-    }
-
-    res.status(500).json({
-      error: "Internal Server Error",
-      message: "Failed to create user",
-    });
   }
-});
+);
 
 /**
  * POST /api/auth/login
@@ -72,36 +112,80 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
  *
  * Returns: { token: string, user: UserData }
  */
-router.post("/login", async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email, password } = req.body;
+router.post(
+  "/login",
+  loginRateLimiter,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      let { email, password } = req.body;
 
-    if (!email || !password) {
-      res.status(400).json({
-        error: "Validation Error",
-        message: "Email and password are required",
+      if (!email || !password) {
+        res.status(400).json({
+          error: "Validation Error",
+          message: "Email and password are required",
+        });
+        return;
+      }
+
+      // Reject objects and arrays to prevent "[object Object]" coercion
+      if (typeof email === "object" || typeof password === "object") {
+        res.status(400).json({
+          error: "Validation Error",
+          message: "Email and password must be primitive values",
+        });
+        return;
+      }
+
+      // Coerce to strings (handles numbers, booleans gracefully)
+      email = String(email);
+      password = String(password);
+
+      // Extract IP address and user agent
+      const ipAddress =
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+        req.socket.remoteAddress;
+      const userAgent = req.headers["user-agent"];
+
+      const result = await authProvider.authenticateUser(
+        email,
+        password,
+        ipAddress,
+        userAgent
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Invalid credentials") {
+        // Log failed login attempt
+        const ipAddress =
+          (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+          req.socket.remoteAddress;
+        const userAgent = req.headers["user-agent"];
+
+        await auditLogProvider.log({
+          action: "login_failed",
+          ipAddress,
+          userAgent,
+          metadata: {
+            email: req.body.email,
+            reason: "Invalid credentials",
+          },
+        });
+
+        res.status(401).json({
+          error: "Unauthorized",
+          message: "Invalid credentials",
+        });
+        return;
+      }
+
+      res.status(500).json({
+        error: "Internal Server Error",
+        message: "Failed to authenticate",
       });
-      return;
     }
-
-    const result = await authProvider.authenticateUser(email, password);
-
-    res.status(200).json(result);
-  } catch (error) {
-    if (error instanceof Error && error.message === "Invalid credentials") {
-      res.status(401).json({
-        error: "Unauthorized",
-        message: "Invalid credentials",
-      });
-      return;
-    }
-
-    res.status(500).json({
-      error: "Internal Server Error",
-      message: "Failed to authenticate",
-    });
   }
-});
+);
 
 /**
  * GET /api/auth/me
@@ -139,6 +223,21 @@ router.get(
         return;
       }
 
+      // Log user data access (optional - may create high volume logs)
+      const ipAddress =
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+        req.socket.remoteAddress;
+      const userAgent = req.headers["user-agent"];
+
+      await auditLogProvider.log({
+        userId,
+        action: "access_user_data",
+        resourceType: "user",
+        resourceId: userId.toString(),
+        ipAddress,
+        userAgent,
+      });
+
       res.status(200).json(user);
     } catch {
       res.status(500).json({
@@ -163,7 +262,25 @@ router.get(
 router.post(
   "/logout",
   authMiddleware,
-  async (_: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user!.userId;
+
+    // Extract IP address and user agent
+    const ipAddress =
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+      req.socket.remoteAddress;
+    const userAgent = req.headers["user-agent"];
+
+    // Log logout event
+    await auditLogProvider.log({
+      userId,
+      action: "logout",
+      resourceType: "user",
+      resourceId: userId.toString(),
+      ipAddress,
+      userAgent,
+    });
+
     res.status(200).json({
       message: "Logout successful",
     });

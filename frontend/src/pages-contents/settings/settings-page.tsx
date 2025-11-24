@@ -1,4 +1,12 @@
-import { Brain, Sparkles, Download, Check, Mic } from "lucide-react";
+import {
+  Brain,
+  Sparkles,
+  Download,
+  Check,
+  Mic,
+  Shield,
+  AlertTriangle,
+} from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useAI } from "@/hooks/use-ai";
@@ -6,6 +14,22 @@ import { useWhisper } from "@/hooks/use-whisper";
 import { AVAILABLE_LLM } from "@/core/ai/types";
 import { AVAILABLE_WHISPER_MODELS } from "@/core/whisper/types";
 import { AICompatibilityNotice } from "@/components/ai-compatibility-notice";
+import { useState } from "react";
+import { apiClient } from "@/core/api/api-client";
+import { ApiEndpoint } from "@/core/api/api-endpoint";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import JSZip from "jszip";
 
 export function SettingsPage() {
   const {
@@ -24,10 +48,127 @@ export function SettingsPage() {
     downloadModel: downloadWhisperModel,
   } = useWhisper();
 
+  const { logout } = useAuth();
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const selectedLLM = AVAILABLE_LLM.find((m) => m.id === selectedModelId);
   const selectedWhisperModel = AVAILABLE_WHISPER_MODELS.find(
     (m) => m.id === selectedWhisperModelId
   );
+
+  async function handleExportData() {
+    try {
+      setIsExporting(true);
+      setExportError(null);
+
+      interface ExportData {
+        user: {
+          id: number;
+          email: string;
+          name: string;
+          createdAt: string;
+          updatedAt: string;
+        };
+        notes: Array<{
+          id: string;
+          title: string;
+          content: unknown;
+          tags: string[];
+          createdAt: string;
+          updatedAt: string;
+        }>;
+        files: Array<{
+          id: string;
+          filename: string;
+          url: string;
+          size: number;
+          createdAt: string;
+        }>;
+        statistics: {
+          totalNotes: number;
+          totalFiles: number;
+          totalStorageBytes: number;
+          accountAge: string;
+        };
+      }
+
+      const exportData = await apiClient.get<ExportData>(
+        ApiEndpoint.EXPORT_USER_DATA
+      );
+
+      // Create ZIP file
+      const zip = new JSZip();
+
+      const jsonString = JSON.stringify(exportData, null, 2);
+      zip.file("data.json", jsonString);
+
+      const fileFolder = zip.folder("files");
+
+      for (const file of exportData.files) {
+        try {
+          const response = await fetch(file.url);
+          if (!response.ok) {
+            console.error(`Failed to download ${file.filename}`);
+            continue;
+          }
+          const blob = await response.blob();
+          fileFolder?.file(file.filename, blob);
+        } catch (error) {
+          console.error(`Error downloading ${file.filename}:`, error);
+          // Continue with other files even if one fails
+        }
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+
+      // Download ZIP file
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `purpleglass-data-export-${Date.now()}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Delay URL revocation to ensure download completes
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error("Export error:", error);
+      setExportError(
+        error instanceof Error ? error.message : "Failed to export data"
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    try {
+      setIsDeleting(true);
+      setDeleteError(null);
+
+      await apiClient.delete(ApiEndpoint.DELETE_ACCOUNT, {
+        password: deletePassword,
+      });
+
+      // Logout and redirect
+      logout();
+    } catch (error) {
+      console.error("Delete account error:", error);
+      setDeleteError(
+        error instanceof Error ? error.message : "Failed to delete account"
+      );
+      setIsDeleting(false);
+    }
+  }
 
   return (
     <div className="h-full overflow-y-auto">
@@ -324,8 +465,116 @@ export function SettingsPage() {
               )}
             </div>
           </div>
+
+          {/* Account & Privacy Section (GDPR Compliance) */}
+          <div className="border rounded-lg p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Shield className="h-5 w-5" />
+              <h2 className="text-xl font-semibold">Account & Privacy</h2>
+            </div>
+
+            <div className="space-y-6">
+              {/* Export Data */}
+              <div>
+                <h3 className="font-medium mb-2">Export Your Data</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Download all your data including notes, files, and account
+                  information in JSON format.
+                </p>
+                {exportError && (
+                  <p className="text-sm text-destructive mb-3">{exportError}</p>
+                )}
+                <Button
+                  onClick={handleExportData}
+                  disabled={isExporting}
+                  variant="outline"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exporting..." : "Export My Data"}
+                </Button>
+              </div>
+
+              {/* Delete Account */}
+              <div className="pt-6 border-t">
+                <div className="flex items-start gap-2 mb-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+                  <h3 className="font-medium text-destructive">
+                    Delete Account
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Permanently delete your account and all associated data. This
+                  action cannot be undone.
+                </p>
+                <Button
+                  onClick={() => setShowDeleteDialog(true)}
+                  variant="destructive"
+                >
+                  Delete My Account
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              account and remove all your data from our servers, including:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 my-4">
+            <li>Your profile and account information</li>
+            <li>All your notes and tags</li>
+            <li>All uploaded files and media</li>
+          </ul>
+
+          <div className="space-y-2">
+            <Label htmlFor="delete-password">
+              Enter your password to confirm
+            </Label>
+            <Input
+              id="delete-password"
+              type="password"
+              placeholder="Password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              disabled={isDeleting}
+            />
+            {deleteError && (
+              <p className="text-sm text-destructive">{deleteError}</p>
+            )}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={isDeleting}
+              onClick={() => {
+                setDeletePassword("");
+                setDeleteError(null);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteAccount();
+              }}
+              disabled={isDeleting || !deletePassword}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete Account"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

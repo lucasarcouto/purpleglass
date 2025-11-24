@@ -21,6 +21,7 @@ model User {
   updatedAt    DateTime       @updatedAt
   notes        Note[]
   blobMetadata BlobMetadata[]
+  auditLogs    AuditLog[]
 
   @@map("users")
 }
@@ -50,4 +51,22 @@ model BlobMetadata {
   @@index([userId])
   @@index([url])
   @@map("blob_metadata")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       Int?
+  action       String // "login", "register", "delete_note", "upload_file", etc.
+  resourceType String? // "note", "file", "user"
+  resourceId   String?
+  ipAddress    String?
+  userAgent    String?
+  metadata     Json? // Additional context
+  createdAt    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

@@ -3,11 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/core/services/auth-service";
 import type { LoginCredentials, RegisterCredentials } from "@/core/api/types";
 import { AuthContext, type AuthContextValue } from "@/core/auth/auth-context";
+import { useNavigate } from "@tanstack/react-router";
 
 const AUTH_QUERY_KEY = ["auth", "user"];
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const queryClient = useQueryClient();
+
+  const navigate = useNavigate();
 
   const {
     data: user,
@@ -37,6 +40,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     onSuccess: () => {
       queryClient.setQueryData(AUTH_QUERY_KEY, null);
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+      navigate({ to: "/sign-in" });
     },
   });
 

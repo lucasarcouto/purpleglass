@@ -13,4 +13,8 @@ export class ApiEndpoint {
 
   // Upload endpoint
   static readonly UPLOAD = "/api/upload";
+
+  // User endpoints (GDPR Compliance)
+  static readonly EXPORT_USER_DATA = "/api/users/export";
+  static readonly DELETE_ACCOUNT = "/api/users/account";
 }

@@ -1,14 +1,25 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import authRoutes from "@/routes/auth.js";
 import notesRoutes from "@/routes/notes.js";
 import uploadRoutes from "@/routes/upload.js";
+import usersRoutes from "@/routes/users.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 const HOST = "0.0.0.0";
 
-// Middleware
+// Security Middleware
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // CSP is disabled for JSON API backend - it's only needed for serving HTML pages
+    crossOriginEmbedderPolicy: false, // Needed for CORS
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Needed for CORS
+  })
+);
+
+// CORS Middleware
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN
@@ -17,7 +28,9 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+
+// JSON Payload Middleware with size limit
+app.use(express.json({ limit: "1mb" }));
 
 // Routes
 app.get("/api/health", (_req: Request, res: Response) => {
@@ -26,6 +39,9 @@ app.get("/api/health", (_req: Request, res: Response) => {
 
 // Authentication routes
 app.use("/api/auth", authRoutes);
+
+// User routes
+app.use("/api/users", usersRoutes);
 
 // Notes routes
 app.use("/api/notes", notesRoutes);

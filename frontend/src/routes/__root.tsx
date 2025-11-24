@@ -4,12 +4,21 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { PageHeader } from "@/components/sidebar/page-header";
 import { useAuth } from "@/hooks/use-auth";
+import { AuthProvider } from "@/core/auth/auth-provider";
 
 export const Route = createRootRoute({
   component: RootComponent,
 });
 
 function RootComponent() {
+  return (
+    <AuthProvider>
+      <RootContent />
+    </AuthProvider>
+  );
+}
+
+function RootContent() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {

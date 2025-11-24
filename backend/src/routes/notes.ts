@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "@/middleware/auth.js";
 import { notesProvider } from "@/providers/notes-provider.js";
+import { auditLogProvider } from "@/providers/audit-log-provider.js";
 
 const router = Router();
 
@@ -72,6 +73,23 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
     const note = await notesProvider.createNote(userId, title, content, tags);
 
+    // Log note creation
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    await auditLogProvider.log({
+      userId,
+      action: "create_note",
+      resourceType: "note",
+      resourceId: note.id,
+      ipAddress,
+      userAgent,
+      metadata: {
+        title: note.title,
+        tags: note.tags,
+      },
+    });
+
     res.status(201).json(note);
   } catch (error) {
     const message =
@@ -102,6 +120,23 @@ router.patch("/:id", async (req: Request, res: Response): Promise<void> => {
 
     const note = await notesProvider.updateNote(id, userId, title, content, tags);
 
+    // Log note update
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    await auditLogProvider.log({
+      userId,
+      action: "update_note",
+      resourceType: "note",
+      resourceId: note.id,
+      ipAddress,
+      userAgent,
+      metadata: {
+        title: note.title,
+        tags: note.tags,
+      },
+    });
+
     res.status(200).json(note);
   } catch (error) {
     const message =
@@ -127,7 +162,28 @@ router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.userId;
     const { id } = req.params;
 
+    // Get note details before deletion for audit log
+    const note = await notesProvider.getNote(id, userId);
+
     await notesProvider.deleteNote(id, userId);
+
+    // Log note deletion (CRITICAL for compliance)
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    await auditLogProvider.log({
+      userId,
+      action: "delete_note",
+      resourceType: "note",
+      resourceId: id,
+      ipAddress,
+      userAgent,
+      metadata: {
+        title: note.title,
+        tags: note.tags,
+        deletedAt: new Date().toISOString(),
+      },
+    });
 
     res.status(200).json({ message: "Note deleted successfully" });
   } catch (error) {

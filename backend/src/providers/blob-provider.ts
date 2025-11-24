@@ -25,7 +25,7 @@ class BlobProvider {
     const addRandomSuffix = options.addRandomSuffix ?? true;
 
     const blob = await put(filename, buffer, {
-      access: "public",
+      access: "public", // TODO: Change to "private" - requires frontend updates to handle signed URLs
       addRandomSuffix,
     });
 
@@ -76,7 +76,7 @@ class BlobProvider {
       select: { url: true },
     });
 
-    const ownedUrls = ownedBlobs.map((b) => b.url);
+    const ownedUrls = ownedBlobs.map((b: { url: string }) => b.url);
 
     if (ownedUrls.length === 0) {
       throw new Error(
