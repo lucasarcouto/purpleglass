@@ -103,6 +103,12 @@ export function SettingsPage() {
                               Download it now to use AI features.
                             </>
                           )}
+                          {modelStatus === "cached" && (
+                            <>
+                              Model previously downloaded and cached in browser
+                              ({selectedLLM.size}). Ready to load on first use.
+                            </>
+                          )}
                           {modelStatus === "loading" && (
                             <>
                               Model is currently being downloaded and loaded...
@@ -146,7 +152,7 @@ export function SettingsPage() {
                     {modelStatus !== "loading" && (
                       <Button
                         onClick={downloadModel}
-                        disabled={modelStatus !== "ready"}
+                        disabled={false}
                         variant={
                           modelStatus === "ready" ? "outline" : "default"
                         }
@@ -239,6 +245,13 @@ export function SettingsPage() {
                               use transcription features.
                             </>
                           )}
+                          {whisperModelStatus === "cached" && (
+                            <>
+                              Model previously downloaded and cached in browser
+                              ({selectedWhisperModel.size}). Ready to load on
+                              first use.
+                            </>
+                          )}
                           {whisperModelStatus === "loading" && (
                             <>
                               Model is currently being downloaded and loaded...
@@ -282,7 +295,7 @@ export function SettingsPage() {
                     {whisperModelStatus !== "loading" && (
                       <Button
                         onClick={downloadWhisperModel}
-                        disabled={whisperModelStatus !== "ready"}
+                        disabled={false}
                         variant={
                           whisperModelStatus === "ready" ? "outline" : "default"
                         }

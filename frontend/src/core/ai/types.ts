@@ -1,4 +1,4 @@
-export type AIModelStatus = "idle" | "loading" | "ready" | "error";
+export type AIModelStatus = "idle" | "loading" | "ready" | "error" | "cached";
 
 export type AIOperationStatus = "idle" | "processing" | "success" | "error";
 

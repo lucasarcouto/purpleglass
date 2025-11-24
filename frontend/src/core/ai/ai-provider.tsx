@@ -5,18 +5,25 @@ import type { AIModelStatus, AIModelProgress } from "@/core/ai/types";
 import { DEFAULT_MODEL_ID } from "@/core/ai/types";
 
 const STORAGE_KEY_MODEL_ID = "ai-selected-model-id";
+const STORAGE_KEY_DOWNLOADED_MODELS = "ai-downloaded-models";
 
 interface AIProviderProps {
   children: ReactNode;
 }
 
 export function AIProvider({ children }: Readonly<AIProviderProps>) {
-  const [modelStatus, setModelStatus] = useState<AIModelStatus>("idle");
-  const [modelProgress, setModelProgress] = useState<AIModelProgress | null>(
-    null
-  );
   const [selectedModelId, setSelectedModelIdState] = useState<string>(
     () => localStorage.getItem(STORAGE_KEY_MODEL_ID) || DEFAULT_MODEL_ID
+  );
+
+  const [modelStatus, setModelStatus] = useState<AIModelStatus>(() => {
+    // Check if the selected model was previously downloaded
+    const downloadedModels = getDownloadedModels();
+    return downloadedModels.has(selectedModelId) ? "cached" : "idle";
+  });
+
+  const [modelProgress, setModelProgress] = useState<AIModelProgress | null>(
+    null
   );
 
   const engineRef = useRef<webllm.MLCEngine | null>(null);
@@ -33,7 +40,10 @@ export function AIProvider({ children }: Readonly<AIProviderProps>) {
     ) {
       engineRef.current = null;
       currentModelIdRef.current = null;
-      setModelStatus("idle");
+
+      // Check if the new model was previously downloaded
+      const downloadedModels = getDownloadedModels();
+      setModelStatus(downloadedModels.has(modelId) ? "cached" : "idle");
       setModelProgress(null);
     }
   }, []);
@@ -61,6 +71,9 @@ export function AIProvider({ children }: Readonly<AIProviderProps>) {
       currentModelIdRef.current = selectedModelId;
       setModelStatus("ready");
       setModelProgress(null);
+
+      // Save this model as downloaded for future sessions
+      saveDownloadedModel(selectedModelId);
 
       return engine;
     } catch (error) {
@@ -257,4 +270,18 @@ export function AIProvider({ children }: Readonly<AIProviderProps>) {
   );
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
+}
+
+function getDownloadedModels(): Set<string> {
+  const stored = localStorage.getItem(STORAGE_KEY_DOWNLOADED_MODELS);
+  return stored ? new Set(JSON.parse(stored)) : new Set();
+}
+
+function saveDownloadedModel(modelId: string) {
+  const downloaded = getDownloadedModels();
+  downloaded.add(modelId);
+  localStorage.setItem(
+    STORAGE_KEY_DOWNLOADED_MODELS,
+    JSON.stringify([...downloaded])
+  );
 }

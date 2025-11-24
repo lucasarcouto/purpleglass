@@ -13,20 +13,31 @@ import type {
 import { DEFAULT_WHISPER_MODEL_ID } from "@/core/whisper/types";
 
 const STORAGE_KEY_MODEL_ID = "whisper-selected-model-id";
+const STORAGE_KEY_DOWNLOADED_MODELS = "whisper-downloaded-models";
 
 interface WhisperProviderProps {
   children: ReactNode;
 }
 
 export function WhisperProvider({ children }: Readonly<WhisperProviderProps>) {
-  const [modelStatus, setModelStatus] = useState<WhisperModelStatus>("idle");
-  const [transcriptionProgress, setTranscriptionProgress] =
-    useState<TranscriptionProgress | null>(null);
   const [selectedModelId, setSelectedModelIdState] = useState<string>(() => {
     return (
       localStorage.getItem(STORAGE_KEY_MODEL_ID) || DEFAULT_WHISPER_MODEL_ID
     );
   });
+
+  const [modelStatus, setModelStatus] = useState<WhisperModelStatus>(() => {
+    // Check if the selected model was previously downloaded
+    const downloadedModels = getDownloadedModels();
+    return downloadedModels.has(
+      localStorage.getItem(STORAGE_KEY_MODEL_ID) || DEFAULT_WHISPER_MODEL_ID
+    )
+      ? "cached"
+      : "idle";
+  });
+
+  const [transcriptionProgress, setTranscriptionProgress] =
+    useState<TranscriptionProgress | null>(null);
 
   const pipelineRef = useRef<AutomaticSpeechRecognitionPipeline | null>(null);
   const currentModelIdRef = useRef<string | null>(null);
@@ -42,7 +53,10 @@ export function WhisperProvider({ children }: Readonly<WhisperProviderProps>) {
     ) {
       pipelineRef.current = null;
       currentModelIdRef.current = null;
-      setModelStatus("idle");
+
+      // Check if the new model was previously downloaded
+      const downloadedModels = getDownloadedModels();
+      setModelStatus(downloadedModels.has(modelId) ? "cached" : "idle");
       setTranscriptionProgress(null);
     }
   }, []);
@@ -81,6 +95,9 @@ export function WhisperProvider({ children }: Readonly<WhisperProviderProps>) {
       currentModelIdRef.current = selectedModelId;
       setModelStatus("ready");
       setTranscriptionProgress(null);
+
+      // Save this model as downloaded for future sessions
+      saveDownloadedModel(selectedModelId);
 
       return transcriber;
     } catch (error) {
@@ -162,5 +179,19 @@ export function WhisperProvider({ children }: Readonly<WhisperProviderProps>) {
 
   return (
     <WhisperContext.Provider value={value}>{children}</WhisperContext.Provider>
+  );
+}
+
+function getDownloadedModels(): Set<string> {
+  const stored = localStorage.getItem(STORAGE_KEY_DOWNLOADED_MODELS);
+  return stored ? new Set(JSON.parse(stored)) : new Set();
+}
+
+function saveDownloadedModel(modelId: string) {
+  const downloaded = getDownloadedModels();
+  downloaded.add(modelId);
+  localStorage.setItem(
+    STORAGE_KEY_DOWNLOADED_MODELS,
+    JSON.stringify([...downloaded])
   );
 }

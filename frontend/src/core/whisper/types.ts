@@ -1,4 +1,4 @@
-export type WhisperModelStatus = "idle" | "loading" | "ready" | "error";
+export type WhisperModelStatus = "idle" | "loading" | "ready" | "error" | "cached";
 
 export type TranscriptionStatus = "idle" | "processing" | "success" | "error";
 
