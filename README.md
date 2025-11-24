@@ -357,48 +357,10 @@ PurpleGlass implements comprehensive security measures and complies with major p
 - ✅ Rate limiting on sensitive endpoints
 - ✅ File type validation
 - ✅ CORS restrictions
-- ✅ Security headers (CSP, X-Frame-Options, etc.)
+- ✅ Security headers via Helmet
 - ✅ Input validation and sanitization
 - ✅ Database cascade deletion
 - ✅ Audit logging table (schema defined)
-
-#### Recommended for Production
-
-⚠️ **Database Encryption at Rest**:
-
-- Enable PostgreSQL encryption (pgcrypto or TDE)
-- See deployment provider documentation
-
-⚠️ **Private Blob Storage**:
-
-- Currently using public Vercel Blob URLs
-- TODO: Implement signed URLs with expiration
-- Or proxy file access through backend with auth
-
-⚠️ **Environment Security**:
-
-- Use strong JWT_SECRET (not default value)
-- Rotate secrets regularly
-- Use environment-specific secrets (dev/staging/prod)
-
-⚠️ **Monitoring & Alerts**:
-
-- Set up error monitoring (Sentry, etc.)
-- Configure security alerts for suspicious activity
-- Monitor rate limit violations
-
-### Running Prisma Migrations
-
-After pulling these security changes, run the database migration to create the audit_logs table:
-
-```bash
-# With Docker
-docker compose exec backend npx prisma migrate dev --name add_security_features
-
-# Without Docker
-cd backend
-npx prisma migrate dev --name add_security_features
-```
 
 ## Roadmap
 
@@ -426,5 +388,15 @@ Planned features and improvements:
    - Conflict resolution for offline edits
 
 5. **Technical Improvements**
+
    - MobX for complex state management (NotesPage, AI, Whisper)
    - UI/UX refinements and polish
+
+6. **Database Encryption at Rest**
+
+- Enable PostgreSQL encryption (pgcrypto or TDE)
+
+7. **Monitoring & Alerts**:
+
+- Set up error monitoring (Sentry, etc.)
+- Configure security alerts for suspicious activity

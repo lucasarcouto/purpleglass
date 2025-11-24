@@ -5,6 +5,12 @@ import { auditLogProvider } from "@/providers/audit-log-provider.js";
 
 const router = Router();
 
+// Validation helper functions
+interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
 // All routes require authentication
 router.use(authMiddleware);
 
@@ -69,13 +75,47 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
 router.post("/", async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const { title, content, tags } = req.body;
+    let { title, content, tags } = req.body;
+
+    const titleValidation = validateTitle(title);
+
+    if (!titleValidation.valid) {
+      res.status(400).json({
+        error: "Validation Error",
+        message: titleValidation.error,
+      });
+      return;
+    }
+
+    title = titleValidation.coercedValue;
+
+    const contentValidation = validateContent(content);
+
+    if (!contentValidation.valid) {
+      res.status(400).json({
+        error: "Validation Error",
+        message: contentValidation.error,
+      });
+      return;
+    }
+
+    const tagsValidation = validateTags(tags);
+
+    if (!tagsValidation.valid) {
+      res.status(400).json({
+        error: "Validation Error",
+        message: tagsValidation.error,
+      });
+      return;
+    }
 
     const note = await notesProvider.createNote(userId, title, content, tags);
 
     // Log note creation
-    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const ipAddress =
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+      req.socket.remoteAddress;
+    const userAgent = req.headers["user-agent"];
 
     await auditLogProvider.log({
       userId,
@@ -116,13 +156,56 @@ router.patch("/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
     const { id } = req.params;
-    const { title, content, tags } = req.body;
+    let { title, content, tags } = req.body;
 
-    const note = await notesProvider.updateNote(id, userId, title, content, tags);
+    // Validate inputs if provided
+    if (title !== undefined && title !== null) {
+      const titleValidation = validateTitle(title);
+
+      if (!titleValidation.valid) {
+        res.status(400).json({
+          error: "Validation Error",
+          message: titleValidation.error,
+        });
+        return;
+      }
+
+      title = titleValidation.coercedValue;
+    }
+
+    const contentValidation = validateContent(content);
+
+    if (!contentValidation.valid) {
+      res.status(400).json({
+        error: "Validation Error",
+        message: contentValidation.error,
+      });
+      return;
+    }
+
+    const tagsValidation = validateTags(tags);
+
+    if (!tagsValidation.valid) {
+      res.status(400).json({
+        error: "Validation Error",
+        message: tagsValidation.error,
+      });
+      return;
+    }
+
+    const note = await notesProvider.updateNote(
+      id,
+      userId,
+      title,
+      content,
+      tags
+    );
 
     // Log note update
-    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const ipAddress =
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+      req.socket.remoteAddress;
+    const userAgent = req.headers["user-agent"];
 
     await auditLogProvider.log({
       userId,
@@ -168,8 +251,10 @@ router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
     await notesProvider.deleteNote(id, userId);
 
     // Log note deletion (CRITICAL for compliance)
-    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const ipAddress =
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+      req.socket.remoteAddress;
+    const userAgent = req.headers["user-agent"];
 
     await auditLogProvider.log({
       userId,
@@ -197,5 +282,75 @@ router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
     });
   }
 });
+
+function validateTitle(
+  title: any
+): ValidationResult & { coercedValue?: string } {
+  if (!title) {
+    return { valid: false, error: "Title is required" };
+  }
+
+  if (typeof title === "object") {
+    return { valid: false, error: "Title must be a string" };
+  }
+
+  const coercedTitle = String(title);
+
+  if (coercedTitle.length === 0) {
+    return { valid: false, error: "Title cannot be empty" };
+  }
+
+  if (coercedTitle.length > 200) {
+    return {
+      valid: false,
+      error: "Title must be 200 characters or less",
+    };
+  }
+
+  return { valid: true, coercedValue: coercedTitle };
+}
+
+function validateContent(content: any): ValidationResult {
+  if (content === undefined || content === null) {
+    return { valid: true };
+  }
+
+  const contentSize = JSON.stringify(content).length;
+
+  if (contentSize > 1000000) {
+    return { valid: false, error: "Content must be less than 1MB" };
+  }
+
+  return { valid: true };
+}
+
+function validateTags(tags: any): ValidationResult {
+  if (tags === undefined || tags === null) {
+    return { valid: true };
+  }
+
+  if (!Array.isArray(tags)) {
+    return { valid: false, error: "Tags must be an array" };
+  }
+
+  if (tags.length > 20) {
+    return { valid: false, error: "Maximum 20 tags allowed" };
+  }
+
+  for (const tag of tags) {
+    if (typeof tag !== "string") {
+      return { valid: false, error: "All tags must be strings" };
+    }
+
+    if (tag.length > 30) {
+      return {
+        valid: false,
+        error: "Each tag must be 30 characters or less",
+      };
+    }
+  }
+
+  return { valid: true };
+}
 
 export default router;
