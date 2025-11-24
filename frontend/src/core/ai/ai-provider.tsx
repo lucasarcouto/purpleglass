@@ -66,8 +66,8 @@ export function AIProvider({ children }: Readonly<AIProviderProps>) {
           });
         },
         appConfig: {
-          model_list: [], // Empty since we pass modelId directly
-          useIndexedDBCache: true, // Use IndexedDB instead of Cache API to avoid COEP issues
+          ...webllm.prebuiltAppConfig,
+          useIndexedDBCache: true, // Use IndexedDB instead of Cache API to avoid COEP credentialless issues
         },
       });
 
