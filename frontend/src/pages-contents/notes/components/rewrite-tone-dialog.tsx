@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -59,6 +59,7 @@ export function RewriteToneDialog({
   const [selectedTone, setSelectedTone] = useState<ToneType | null>(null);
   const [rewrittenText, setRewrittenText] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   async function handleToneSelect(tone: ToneType) {
     setSelectedTone(tone);
@@ -66,18 +67,22 @@ export function RewriteToneDialog({
 
     if (!text.trim()) {
       setRewrittenText('Note is empty. Add some content first!');
+      setIsError(true);
       return;
     }
 
     setIsLoading(true);
     setRewrittenText(null);
+    setIsError(false);
 
     try {
       const result = await rewriteTone(text, tone);
       setRewrittenText(result);
+      setIsError(false);
     } catch (error) {
       console.error('Failed to rewrite tone:', error);
       setRewrittenText('Failed to rewrite text. Please try again.');
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
@@ -151,8 +156,18 @@ export function RewriteToneDialog({
     return (
       <>
         <div className="py-4 max-h-[500px] overflow-y-auto">
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+          <div
+            className={`p-4 rounded-lg ${
+              isError
+                ? "bg-destructive/10 border border-destructive/20"
+                : "bg-muted"
+            }`}
+          >
+            <p
+              className={`leading-relaxed whitespace-pre-wrap ${
+                isError ? "text-destructive" : "text-foreground"
+              }`}
+            >
               {rewrittenText}
             </p>
           </div>
@@ -160,19 +175,26 @@ export function RewriteToneDialog({
 
         {rewrittenText && (
           <DialogFooter>
-            <Button onClick={handleCopy} disabled={copied}>
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Text
-                </>
-              )}
-            </Button>
+            {isError ? (
+              <Button onClick={() => selectedTone && handleToneSelect(selectedTone)}>
+                <Loader2 className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+            ) : (
+              <Button onClick={handleCopy} disabled={copied}>
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Text
+                  </>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         )}
       </>
@@ -190,6 +212,16 @@ export function RewriteToneDialog({
 
     return renderResult();
   }
+
+  useEffect(() => {
+    if (open) {
+      // Reset state when dialog opens
+      setSelectedTone(null);
+      setRewrittenText(null);
+      setIsError(false);
+      setCopied(false);
+    }
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -29,6 +29,7 @@ export function SummaryDialog({
   const [copied, setCopied] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   async function handleCopy() {
     if (summary) {
@@ -43,18 +44,22 @@ export function SummaryDialog({
 
     if (!text.trim()) {
       setSummary("Note is empty. Add some content first!");
+      setIsError(true);
       return;
     }
 
     setIsLoading(true);
     setSummary(null);
+    setIsError(false);
 
     try {
       const result = await summarizeText(text);
       setSummary(result);
+      setIsError(false);
     } catch (error) {
       console.error("Failed to summarize:", error);
       setSummary("Failed to generate summary. Please try again.");
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
@@ -88,8 +93,18 @@ export function SummaryDialog({
 
   function renderSummary() {
     return (
-      <div className="prose prose-sm dark:prose-invert max-w-none">
-        <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+      <div
+        className={`p-4 rounded-lg ${
+          isError
+            ? "bg-destructive/10 border border-destructive/20"
+            : "prose prose-sm dark:prose-invert max-w-none"
+        }`}
+      >
+        <p
+          className={`leading-relaxed whitespace-pre-wrap ${
+            isError ? "text-destructive" : "text-foreground"
+          }`}
+        >
           {summary}
         </p>
       </div>
@@ -117,7 +132,10 @@ export function SummaryDialog({
   }
 
   useEffect(() => {
-    if (open && !summary) {
+    if (open) {
+      // Reset state when dialog opens
+      setSummary(null);
+      setIsError(false);
       generateSummary();
     }
 
@@ -147,26 +165,35 @@ export function SummaryDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleCopy}
-            disabled={!summary || isLoading}
-          >
-            {copied ? (
-              <>
-                <Check className="h-4 w-4 mr-2" />
-                Copied
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy
-              </>
-            )}
-          </Button>
-          <Button onClick={() => onOpenChange(false)} disabled={isLoading}>
-            Close
-          </Button>
+          {isError ? (
+            <Button onClick={generateSummary}>
+              <Loader2 className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleCopy}
+                disabled={!summary || isLoading}
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </>
+                )}
+              </Button>
+              <Button onClick={() => onOpenChange(false)} disabled={isLoading}>
+                Close
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

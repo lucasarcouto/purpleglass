@@ -30,24 +30,29 @@ export function BulletPointsDialog({
   const [copied, setCopied] = useState(false);
   const [bulletPoints, setBulletPoints] = useState<string[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   async function handleGenerateBulletPoints() {
     const text = extractTextFromBlocks(noteContent);
 
     if (!text.trim()) {
       setBulletPoints(["Note is empty. Add some content first!"]);
+      setIsError(true);
       return;
     }
 
     setIsLoading(true);
     setBulletPoints(null);
+    setIsError(false);
 
     try {
       const points = await generateBulletPoints(text);
       setBulletPoints(points);
+      setIsError(false);
     } catch (error) {
       console.error("Failed to generate bullet points:", error);
       setBulletPoints(["Failed to generate bullet points. Please try again."]);
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +70,10 @@ export function BulletPointsDialog({
   }
 
   useEffect(() => {
-    if (open && !bulletPoints) {
+    if (open) {
+      // Reset state when dialog opens
+      setBulletPoints(null);
+      setIsError(false);
       handleGenerateBulletPoints();
     }
 
@@ -113,33 +121,60 @@ export function BulletPointsDialog({
         ) : (
           <>
             <div className="py-4 max-h-[400px] overflow-y-auto">
-              <ul className="space-y-2">
-                {bulletPoints?.map((point, index) => (
-                  <li key={`${point}-${index}`} className="flex gap-2">
-                    <span className="text-muted-foreground select-none">•</span>
-                    <span className="text-foreground leading-relaxed">
-                      {point}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <div
+                className={`p-4 rounded-lg ${
+                  isError
+                    ? "bg-destructive/10 border border-destructive/20"
+                    : ""
+                }`}
+              >
+                <ul className="space-y-2">
+                  {bulletPoints?.map((point, index) => (
+                    <li key={`${point}-${index}`} className="flex gap-2">
+                      <span
+                        className={
+                          isError
+                            ? "text-destructive select-none"
+                            : "text-muted-foreground select-none"
+                        }
+                      >
+                        •
+                      </span>
+                      <span
+                        className={`leading-relaxed ${
+                          isError ? "text-destructive" : "text-foreground"
+                        }`}
+                      >
+                        {point}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
             {bulletPoints && bulletPoints.length > 0 && (
               <DialogFooter>
-                <Button onClick={handleCopy} disabled={copied}>
-                  {copied ? (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copy Bullet Points
-                    </>
-                  )}
-                </Button>
+                {isError ? (
+                  <Button onClick={handleGenerateBulletPoints}>
+                    <Loader2 className="h-4 w-4 mr-2" />
+                    Try Again
+                  </Button>
+                ) : (
+                  <Button onClick={handleCopy} disabled={copied}>
+                    {copied ? (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy Bullet Points
+                      </>
+                    )}
+                  </Button>
+                )}
               </DialogFooter>
             )}
           </>

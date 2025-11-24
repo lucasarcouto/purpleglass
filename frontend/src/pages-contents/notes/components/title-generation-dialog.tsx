@@ -34,24 +34,29 @@ export function TitleGenerationDialog({
 
   const [generatedTitle, setGeneratedTitle] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   async function handleGenerateTitle() {
     const text = extractTextFromBlocks(noteContent);
 
     if (!text.trim()) {
       setGeneratedTitle("Note is empty. Add some content first!");
+      setIsError(true);
       return;
     }
 
     setIsLoading(true);
     setGeneratedTitle(null);
+    setIsError(false);
 
     try {
       const title = await generateTitle(text);
       setGeneratedTitle(title);
+      setIsError(false);
     } catch (error) {
       console.error("Failed to generate title:", error);
       setGeneratedTitle("Failed to generate title. Please try again.");
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +76,10 @@ export function TitleGenerationDialog({
   }
 
   useEffect(() => {
-    if (open && !generatedTitle) {
+    if (open) {
+      // Reset state when dialog opens
+      setGeneratedTitle(null);
+      setIsError(false);
       handleGenerateTitle();
     }
 
@@ -118,8 +126,18 @@ export function TitleGenerationDialog({
           </div>
         ) : (
           <div className="py-4">
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-lg font-medium text-foreground">
+            <div
+              className={`p-4 rounded-lg ${
+                isError
+                  ? "bg-destructive/10 border border-destructive/20"
+                  : "bg-muted"
+              }`}
+            >
+              <p
+                className={`text-lg font-medium ${
+                  isError ? "text-destructive" : "text-foreground"
+                }`}
+              >
                 {generatedTitle}
               </p>
             </div>
@@ -132,10 +150,17 @@ export function TitleGenerationDialog({
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-            <Button onClick={handleAccept}>
-              <Check className="h-4 w-4 mr-2" />
-              Use This Title
-            </Button>
+            {isError ? (
+              <Button onClick={handleGenerateTitle}>
+                <Loader2 className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+            ) : (
+              <Button onClick={handleAccept}>
+                <Check className="h-4 w-4 mr-2" />
+                Use This Title
+              </Button>
+            )}
           </DialogFooter>
         )}
       </DialogContent>
