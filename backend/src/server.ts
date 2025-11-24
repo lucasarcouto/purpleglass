@@ -5,7 +5,8 @@ import notesRoutes from "@/routes/notes.js";
 import uploadRoutes from "@/routes/upload.js";
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
+const HOST = "0.0.0.0";
 
 // Middleware
 app.use(
@@ -33,8 +34,8 @@ app.use("/api/notes", notesRoutes);
 app.use("/api/upload", uploadRoutes);
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Server started and listening on http://${HOST}:${PORT}`);
 });
 
 export default app;
