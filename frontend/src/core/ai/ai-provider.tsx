@@ -65,6 +65,10 @@ export function AIProvider({ children }: Readonly<AIProviderProps>) {
             text: progress.text,
           });
         },
+        appConfig: {
+          model_list: [], // Empty since we pass modelId directly
+          useIndexedDBCache: true, // Use IndexedDB instead of Cache API to avoid COEP issues
+        },
       });
 
       engineRef.current = engine;

@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import type { Block } from "@blocknote/core";
 import { useAI } from "@/hooks/use-ai";
 import { extractTextFromBlocks } from "@/utils/extract-text-from-blocks";
+import { AICompatibilityNotice } from "@/components/ai-compatibility-notice";
 
 interface BulletPointsDialogProps {
   open: boolean;
@@ -83,6 +84,8 @@ export function BulletPointsDialog({
               : "Copy these bullet points to add them to your note."}
           </DialogDescription>
         </DialogHeader>
+
+        <AICompatibilityNotice className="mt-4" />
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center gap-4 py-8">

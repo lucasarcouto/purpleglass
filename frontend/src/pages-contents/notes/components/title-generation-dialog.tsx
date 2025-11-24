@@ -13,6 +13,7 @@ import { Loader2, Check, X } from "lucide-react";
 import { useAI } from "@/hooks/use-ai";
 import { useNotes } from "@/hooks/use-notes";
 import { extractTextFromBlocks } from "@/utils/extract-text-from-blocks";
+import { AICompatibilityNotice } from "@/components/ai-compatibility-notice";
 
 interface TitleGenerationDialogProps {
   open: boolean;
@@ -89,6 +90,8 @@ export function TitleGenerationDialog({
               : "Would you like to use this generated title?"}
           </DialogDescription>
         </DialogHeader>
+
+        <AICompatibilityNotice className="mt-4" />
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center gap-4 py-8">

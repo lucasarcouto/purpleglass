@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAI } from "@/hooks/use-ai";
 import { extractTextFromBlocks } from "@/utils/extract-text-from-blocks";
+import { AICompatibilityNotice } from "@/components/ai-compatibility-notice";
 
 interface SummaryDialogProps {
   open: boolean;
@@ -138,6 +139,8 @@ export function SummaryDialog({
               : "Here is the AI-generated summary of your note"}
           </DialogDescription>
         </DialogHeader>
+
+        <AICompatibilityNotice className="mt-4" />
 
         <div className="min-h-[120px] max-h-[400px] overflow-y-auto">
           {renderContent()}

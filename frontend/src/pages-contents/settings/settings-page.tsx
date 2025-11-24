@@ -5,6 +5,7 @@ import { useAI } from "@/hooks/use-ai";
 import { useWhisper } from "@/hooks/use-whisper";
 import { AVAILABLE_LLM } from "@/core/ai/types";
 import { AVAILABLE_WHISPER_MODELS } from "@/core/whisper/types";
+import { AICompatibilityNotice } from "@/components/ai-compatibility-notice";
 
 export function SettingsPage() {
   const {
@@ -39,6 +40,9 @@ export function SettingsPage() {
         </div>
 
         <div className="space-y-6">
+          {/* Compatibility Notice */}
+          <AICompatibilityNotice />
+
           {/* AI Settings Section */}
           <div className="border rounded-lg p-6">
             <div className="flex items-center gap-2 mb-4">

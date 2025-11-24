@@ -13,6 +13,7 @@ import type { Block } from "@blocknote/core";
 import type { ToneType } from "@/core/ai/types";
 import { useAI } from "@/hooks/use-ai";
 import { extractTextFromBlocks } from "@/utils/extract-text-from-blocks";
+import { AICompatibilityNotice } from "@/components/ai-compatibility-notice";
 
 const TONES: { value: ToneType; label: string; description: string }[] = [
   {
@@ -197,6 +198,9 @@ export function RewriteToneDialog({
           <DialogTitle>Rewrite with Different Tone</DialogTitle>
           <DialogDescription>{getDescriptionText()}</DialogDescription>
         </DialogHeader>
+
+        <AICompatibilityNotice className="mt-4" />
+
         {renderContent()}
       </DialogContent>
     </Dialog>
