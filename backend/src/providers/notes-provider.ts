@@ -45,6 +45,7 @@ class NotesProvider {
    * @param userId - User ID
    * @param title - Note title
    * @param content - Note content (JSON)
+   * @param tags - Note tags (optional)
    *
    * @returns Created note
    *
@@ -53,7 +54,8 @@ class NotesProvider {
   async createNote(
     userId: number,
     title: string,
-    content?: any
+    content?: any,
+    tags?: string[]
   ): Promise<Note> {
     if (!title) {
       throw new Error("Title is required");
@@ -63,6 +65,7 @@ class NotesProvider {
       data: {
         title,
         content: content ?? [],
+        tags: tags ?? [],
         userId,
       },
     });
@@ -75,6 +78,7 @@ class NotesProvider {
    * @param userId - User ID (for authorization)
    * @param title - New title (optional)
    * @param content - New content (optional)
+   * @param tags - New tags (optional)
    *
    * @returns Updated note
    *
@@ -84,9 +88,10 @@ class NotesProvider {
     noteId: string,
     userId: number,
     title?: string,
-    content?: any
+    content?: any,
+    tags?: string[]
   ): Promise<Note> {
-    // Check note exists and belongs to user
+    // Check if note exists and belongs to user
     const existing = await this.getNote(noteId, userId);
 
     // If content is being updated, clean up removed blob files
@@ -99,6 +104,7 @@ class NotesProvider {
       data: {
         ...(title !== undefined && { title }),
         ...(content !== undefined && { content }),
+        ...(tags !== undefined && { tags }),
       },
     });
   }
@@ -112,24 +118,23 @@ class NotesProvider {
    * @throws Error if note not found or doesn't belong to user
    */
   async deleteNote(noteId: string, userId: number): Promise<void> {
-    // Check note exists and belongs to user
+    // Check if note exists and belongs to user
     const existing = await this.getNote(noteId, userId);
 
     // Extract blob URLs from note content
     const blobUrls = blobProvider.extractBlobUrls(existing.content);
 
-    // Delete the note from database
+    // Delete the note
     await prisma.note.delete({
       where: { id: noteId },
     });
 
-    // Clean up associated blob files (ownership already verified via note)
+    // Clean up associated blob files
     if (blobUrls.length > 0) {
       try {
         await blobProvider.deleteFilesInternal(blobUrls);
       } catch (error) {
         console.error("Failed to delete blob files:", error);
-        // Continue even if blob deletion fails - note is already deleted
       }
     }
   }
@@ -153,7 +158,6 @@ class NotesProvider {
         await blobProvider.deleteFilesInternal(removedUrls);
       } catch (error) {
         console.error("Failed to delete removed blob files:", error);
-        // Continue even if blob deletion fails - note update will proceed
       }
     }
   }

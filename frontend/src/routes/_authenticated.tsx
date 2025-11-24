@@ -1,5 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { authService } from "@/core/services/auth-service";
+import { AIProvider } from "@/core/ai/ai-provider";
+import { WhisperProvider } from "@/core/whisper/whisper-provider";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
@@ -17,5 +19,15 @@ export const Route = createFileRoute("/_authenticated")({
       throw redirect({ to: "/sign-in" });
     }
   },
-  component: Outlet,
+  component: AuthenticatedLayout,
 });
+
+function AuthenticatedLayout() {
+  return (
+    <AIProvider>
+      <WhisperProvider>
+        <Outlet />
+      </WhisperProvider>
+    </AIProvider>
+  );
+}

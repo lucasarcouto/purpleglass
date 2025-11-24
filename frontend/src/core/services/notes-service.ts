@@ -6,6 +6,7 @@ interface ApiNote {
   id: string;
   title: string;
   content: unknown;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
   userId: number;
@@ -16,6 +17,7 @@ function mapApiNote(apiNote: ApiNote): Note {
     id: apiNote.id,
     title: apiNote.title,
     content: apiNote.content as Note["content"],
+    tags: apiNote.tags || [],
     createdAt: new Date(apiNote.createdAt),
     updatedAt: new Date(apiNote.updatedAt),
   };

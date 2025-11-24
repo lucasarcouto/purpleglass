@@ -163,13 +163,32 @@ class BlobProvider {
 
   /**
    * Checks if a URL is a Vercel Blob URL.
+   * Supported format: https://{store-id}.public.blob.vercel-storage.com/{path}/{filename}
    *
    * @param url - URL to check
    *
    * @returns True if URL is from Vercel Blob storage
    */
   private isBlobUrl(url: string): boolean {
-    return typeof url === "string" && url.includes("blob.vercel-storage.com");
+    if (typeof url !== "string") {
+      return false;
+    }
+
+    try {
+      const urlObj = new URL(url);
+
+      // Must be https
+      if (urlObj.protocol !== "https:") {
+        return false;
+      }
+
+      // Match Vercel Blob storage domain pattern: *.public.blob.vercel-storage.com
+      const hostname = urlObj.hostname;
+
+      return hostname.endsWith(".public.blob.vercel-storage.com");
+    } catch {
+      return false;
+    }
   }
 }
 

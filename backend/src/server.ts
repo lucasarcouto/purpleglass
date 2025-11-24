@@ -10,7 +10,9 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(",")
+      : ["http://localhost:3000", "http://127.0.0.1:3000"],
     credentials: true,
   })
 );
@@ -19,13 +21,6 @@ app.use(express.json());
 // Routes
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", message: "PurpleGlass backend is running" });
-});
-
-app.get("/api/data", (_req: Request, res: Response) => {
-  res.json({
-    message: "Hello from PurpleGlass!",
-    timestamp: new Date().toISOString(),
-  });
 });
 
 // Authentication routes

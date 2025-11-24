@@ -65,6 +65,7 @@ export function NotesProvider({ children }: Readonly<NotesProviderProps>) {
       id: tempId,
       title: input.title,
       content: input.content ?? [],
+      tags: [],
       createdAt: now,
       updatedAt: now,
     };

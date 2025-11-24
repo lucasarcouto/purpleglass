@@ -78,7 +78,6 @@ npm run dev
 ## API Endpoints
 
 - `GET /api/health` - Health check endpoint
-- `GET /api/data` - Sample data endpoint
 
 ## Features
 

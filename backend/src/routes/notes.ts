@@ -61,16 +61,16 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
  *
  * Create a new note
  *
- * Body: { title: string, content?: Json }
+ * Body: { title: string, content?: Json, tags?: string[] }
  *
  * Returns: Note
  */
 router.post("/", async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const { title, content } = req.body;
+    const { title, content, tags } = req.body;
 
-    const note = await notesProvider.createNote(userId, title, content);
+    const note = await notesProvider.createNote(userId, title, content, tags);
 
     res.status(201).json(note);
   } catch (error) {
@@ -90,7 +90,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
  *
  * Update a note
  *
- * Body: { title?: string, content?: Json }
+ * Body: { title?: string, content?: Json, tags?: string[] }
  *
  * Returns: Note
  */
@@ -98,9 +98,9 @@ router.patch("/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
     const { id } = req.params;
-    const { title, content } = req.body;
+    const { title, content, tags } = req.body;
 
-    const note = await notesProvider.updateNote(id, userId, title, content);
+    const note = await notesProvider.updateNote(id, userId, title, content, tags);
 
     res.status(200).json(note);
   } catch (error) {
