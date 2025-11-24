@@ -2,10 +2,18 @@ import { useState, useRef, useEffect } from "react";
 import type { Block } from "@blocknote/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Send, X, Loader2, RotateCcw } from "lucide-react";
 import type { ChatMessage } from "@/core/ai/types";
 import { useAI } from "@/hooks/use-ai";
 import { extractTextFromBlocks } from "@/utils/extract-text-from-blocks";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -30,6 +38,8 @@ export function ChatSidebar({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const isMobile = useIsMobile();
+
   function handleRestartChat() {
     setMessages([]);
   }
@@ -47,7 +57,6 @@ export function ChatSidebar({
 
     setInputValue("");
 
-    // Add user message
     const newMessages: ChatMessage[] = [
       ...messages,
       { role: "user", content: userMessage },
@@ -87,10 +96,87 @@ export function ChatSidebar({
     scrollToBottom();
   }, [messages]);
 
-  if (!isOpen) return null;
+  // Mobile: Use Sheet overlay
+  if (isMobile) {
+    return (
+      <Sheet open={isOpen} onOpenChange={onClose}>
+        <SheetContent
+          side="right"
+          className="w-11/12 sm:w-96 p-0 flex flex-col"
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Chat with AI</SheetTitle>
+            <SheetDescription>
+              Ask questions about {noteTitle || "your note"}
+            </SheetDescription>
+          </SheetHeader>
+          <ChatContent
+            noteTitle={noteTitle}
+            messages={messages}
+            isLoading={isLoading}
+            inputValue={inputValue}
+            messagesEndRef={messagesEndRef}
+            isMobile={isMobile}
+            onRestartChat={handleRestartChat}
+            onClose={onClose}
+            onInputChange={setInputValue}
+            onSubmit={handleSubmit}
+          />
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
+  // Desktop: Fixed sidebar that pushes content
   return (
-    <div className="fixed right-0 top-0 h-screen w-96 bg-background border-l shadow-lg flex flex-col z-50">
+    <div
+      className={`fixed right-0 top-0 h-screen w-96 bg-background border-l shadow-lg flex flex-col z-40 transition-transform duration-300 ease-in-out ${
+        isOpen ? "translate-x-0" : "translate-x-full"
+      }`}
+    >
+      <ChatContent
+        noteTitle={noteTitle}
+        messages={messages}
+        isLoading={isLoading}
+        inputValue={inputValue}
+        messagesEndRef={messagesEndRef}
+        isMobile={isMobile}
+        onRestartChat={handleRestartChat}
+        onClose={onClose}
+        onInputChange={setInputValue}
+        onSubmit={handleSubmit}
+      />
+    </div>
+  );
+}
+
+interface ChatContentProps {
+  noteTitle?: string;
+  messages: ChatMessage[];
+  isLoading: boolean;
+  inputValue: string;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  isMobile: boolean;
+  onRestartChat: () => void;
+  onClose: () => void;
+  onInputChange: (value: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+}
+
+function ChatContent({
+  noteTitle,
+  messages,
+  isLoading,
+  inputValue,
+  messagesEndRef,
+  isMobile,
+  onRestartChat,
+  onClose,
+  onInputChange,
+  onSubmit,
+}: Readonly<ChatContentProps>) {
+  return (
+    <>
       {/* Header */}
       <div className="p-4 border-b flex items-center justify-between">
         <div className="flex-1">
@@ -104,7 +190,7 @@ export function ChatSidebar({
         <div className="flex gap-2">
           {messages.length > 0 && (
             <Button
-              onClick={handleRestartChat}
+              onClick={onRestartChat}
               variant="ghost"
               size="sm"
               title="Restart chat"
@@ -112,14 +198,16 @@ export function ChatSidebar({
               <RotateCcw className="h-4 w-4" />
             </Button>
           )}
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            size="sm"
-            title="Close chat"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          {!isMobile && (
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="sm"
+              title="Close chat"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -166,11 +254,11 @@ export function ChatSidebar({
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="p-4 border-t">
+      <form onSubmit={onSubmit} className="p-4 border-t">
         <div className="flex gap-2">
           <Input
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => onInputChange(e.target.value)}
             placeholder="Ask a question..."
             disabled={isLoading}
             className="flex-1"
@@ -184,6 +272,6 @@ export function ChatSidebar({
           </Button>
         </div>
       </form>
-    </div>
+    </>
   );
 }

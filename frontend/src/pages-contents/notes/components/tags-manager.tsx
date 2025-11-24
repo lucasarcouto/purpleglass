@@ -1,24 +1,20 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Sparkles, Loader2 } from "lucide-react";
+import { XIcon, PlusIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface TagsManagerProps {
   tags: string[];
-  isGenerating?: boolean;
   compact?: boolean;
   onTagsChange: (tags: string[]) => void;
-  onGenerateTags?: () => void;
 }
 
 export function TagsManager({
   tags,
-  isGenerating = false,
   compact = false,
   onTagsChange,
-  onGenerateTags,
 }: Readonly<TagsManagerProps>) {
   const [newTag, setNewTag] = useState("");
   const [isAdding, setIsAdding] = useState(false);
@@ -60,30 +56,7 @@ export function TagsManager({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">Tags</Label>
-        {onGenerateTags && (
-          <Button
-            onClick={onGenerateTags}
-            disabled={isGenerating}
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-3 w-3 mr-1.5" />
-                Generate Tags
-              </>
-            )}
-          </Button>
-        )}
-      </div>
+      <Label className="text-sm font-medium">Tags</Label>
 
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => (
@@ -97,7 +70,7 @@ export function TagsManager({
               onClick={() => handleRemoveTag(tag)}
               className="hover:bg-muted-foreground/20 rounded-full p-0.5 transition-colors"
             >
-              <X className="h-3 w-3" />
+              <XIcon className="h-3 w-3" />
             </button>
           </Badge>
         ))}
@@ -125,17 +98,11 @@ export function TagsManager({
             size="sm"
             className="h-7 px-2"
           >
-            <Plus className="h-3 w-3 mr-1" />
+            <PlusIcon className="h-3 w-3 mr-1" />
             Add Tag
           </Button>
         )}
       </div>
-
-      {tags.length === 0 && !isAdding && (
-        <p className="text-xs text-muted-foreground">
-          No tags yet. Add tags manually or generate them with AI.
-        </p>
-      )}
     </div>
   );
 }

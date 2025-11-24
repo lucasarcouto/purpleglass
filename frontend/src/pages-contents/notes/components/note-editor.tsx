@@ -17,9 +17,9 @@ import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
 import { useTheme } from "@/hooks/use-theme";
 import { apiClient } from "@/core/api/api-client";
 import { ApiEndpoint } from "@/core/api/api-endpoint";
-import { CustomFilePanel } from "./custom-file-panel";
-import { CustomReactAudioBlock } from "./custom-audio-block-spec";
-import { CustomFormattingToolbar } from "./custom-formatting-toolbar";
+import { CustomFilePanel } from "@/pages-contents/notes/components/custom-file-panel";
+import { CustomReactAudioBlock } from "@/pages-contents/notes/components/custom-audio-block-spec";
+import { CustomFormattingToolbar } from "@/pages-contents/notes/components/custom-formatting-toolbar";
 import { useWhisper } from "@/hooks/use-whisper";
 
 import "@blocknote/core/fonts/inter.css";

@@ -3,7 +3,7 @@ import { useBlockNoteEditor } from "@blocknote/react";
 import type { FilePanelProps } from "@blocknote/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AudioRecorder } from "./audio-recorder";
+import { AudioRecorder } from "@/pages-contents/notes/components/audio-recorder";
 import { cn } from "@/utils/utils";
 import { UploadIcon, LinkIcon, MicIcon, Loader2Icon } from "lucide-react";
 

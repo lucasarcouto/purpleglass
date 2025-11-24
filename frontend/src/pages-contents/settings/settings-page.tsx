@@ -14,6 +14,7 @@ export function SettingsPage() {
     modelProgress,
     downloadModel,
   } = useAI();
+
   const {
     selectedModelId: selectedWhisperModelId,
     setSelectedModelId: setSelectedWhisperModelId,

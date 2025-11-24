@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Home, Settings, FileText, NotebookPen } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -10,33 +9,8 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { NavMain } from "@/components/sidebar/nav-main";
+import { NavNotes } from "@/components/sidebar/nav-notes";
 import { NavUser } from "@/components/sidebar/nav-user";
-
-const sidebarItems = {
-  navMain: [
-    {
-      title: "Home",
-      url: "/",
-      icon: Home,
-    },
-    {
-      title: "Notes",
-      url: "/notes",
-      icon: NotebookPen,
-    },
-    {
-      title: "Documents",
-      url: "/documents",
-      icon: FileText,
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings,
-    },
-  ],
-};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -51,7 +25,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Purple Glass</span>
-                  <span className="truncate text-xs">Dashboard</span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -60,7 +33,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={sidebarItems.navMain} />
+        <NavNotes />
       </SidebarContent>
       <SidebarSeparator />
       <SidebarFooter>

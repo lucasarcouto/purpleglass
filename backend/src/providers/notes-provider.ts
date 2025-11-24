@@ -1,5 +1,5 @@
 import { prisma } from "@/core/database/client.js";
-import { blobProvider } from "./blob-provider.js";
+import { blobProvider } from "@/providers/blob-provider.js";
 import { Note } from "@prisma/client";
 
 class NotesProvider {

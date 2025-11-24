@@ -3,7 +3,7 @@ import {
   pipeline,
   AutomaticSpeechRecognitionPipeline,
 } from "@huggingface/transformers";
-import { WhisperContext } from "./whisper-context";
+import { WhisperContext } from "@/core/whisper/whisper-context";
 import type {
   WhisperModelStatus,
   TranscriptionProgress,

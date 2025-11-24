@@ -2,7 +2,7 @@ import { useCallback, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/core/services/auth-service";
 import type { LoginCredentials, RegisterCredentials } from "@/core/api/types";
-import { AuthContext, type AuthContextValue } from "./auth-context";
+import { AuthContext, type AuthContextValue } from "@/core/auth/auth-context";
 
 const AUTH_QUERY_KEY = ["auth", "user"];
 

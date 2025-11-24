@@ -1,15 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { NotesProvider } from "@/core/notes/notes-provider";
-import { NotesPage } from "@/pages-contents/notes/notes-page";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/notes")({
-  component: NotesRoute,
+  component: NotesLayout,
 });
 
-function NotesRoute() {
-  return (
-    <NotesProvider>
-      <NotesPage />
-    </NotesProvider>
-  );
+function NotesLayout() {
+  return <Outlet />;
 }

@@ -10,11 +10,13 @@ export function PageHeader() {
   const title = useMemo(() => {
     const pathname = router.latestLocation.pathname;
 
-    if (pathname === "/") return "Home";
+    if (pathname === "/") return "Notes";
+    if (pathname.startsWith("/notes")) return "Notes";
+    if (pathname === "/settings") return "Settings";
 
     const title = pathname.split("/").pop();
 
-    return title ? title.charAt(0).toUpperCase() + title.slice(1) : "Home";
+    return title ? title.charAt(0).toUpperCase() + title.slice(1) : "Notes";
   }, [router.latestLocation.pathname]);
 
   return (

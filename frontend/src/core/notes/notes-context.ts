@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { Note, CreateNoteInput, UpdateNoteInput } from "./types";
+import type { Note, CreateNoteInput, UpdateNoteInput } from "@/core/notes/types";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
