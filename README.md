@@ -364,12 +364,6 @@ PurpleGlass implements comprehensive security measures and complies with major p
 
 #### Recommended for Production
 
-⚠️ **HTTPS Enforcement**:
-
-- Configure SSL/TLS certificates
-- Enable Strict-Transport-Security headers in production
-- Redirect HTTP to HTTPS
-
 ⚠️ **Database Encryption at Rest**:
 
 - Enable PostgreSQL encryption (pgcrypto or TDE)
@@ -406,14 +400,6 @@ cd backend
 npx prisma migrate dev --name add_security_features
 ```
 
-### Compliance Checklist
-
-See [COMPLIANCE-TODO.md](./COMPLIANCE-TODO.md) for a detailed checklist of all security and compliance tasks.
-
-### Security Vulnerabilities
-
-If you discover a security vulnerability, please email [security@purpleglass.com] (or create a private security advisory on GitHub). Do not create public issues for security vulnerabilities.
-
 ## Roadmap
 
 Planned features and improvements:
@@ -425,7 +411,7 @@ Planned features and improvements:
 
 2. **Offline-First Architecture**
 
-   - Disable cloud sync by default
+   - Allow users to disable cloud sync
    - Full offline mode with local storage
    - Optional sync for backup purposes
 
