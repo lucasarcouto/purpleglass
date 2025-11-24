@@ -4,6 +4,7 @@ import {
   useImperativeHandle,
   forwardRef,
   useState,
+  useEffect,
 } from "react";
 import {
   useCreateBlockNote,
@@ -60,13 +61,16 @@ export const NoteEditor = forwardRef<NoteEditorRef, NoteEditorProps>(
   ) {
     const { theme } = useTheme();
 
+    const [isContentLoaded, setIsContentLoaded] = useState(false);
+
+    const initialContentRef = useRef(initialContent);
+
     const previousUrlsRef = useRef<Set<string>>(
       initialContent ? extractMediaUrls(initialContent) : new Set()
     );
 
     const editor = useCreateBlockNote({
       schema,
-      initialContent: initialContent?.length ? initialContent : undefined,
       uploadFile,
     });
 
@@ -108,6 +112,36 @@ export const NoteEditor = forwardRef<NoteEditorRef, NoteEditorProps>(
         }
       },
       [editor, transcribe]
+    );
+
+    const handleChange = useCallback(() => {
+      const currentUrls = extractMediaUrls(editor.document);
+
+      const removedUrls: string[] = [];
+
+      previousUrlsRef.current.forEach((url) => {
+        if (!currentUrls.has(url)) {
+          removedUrls.push(url);
+        }
+      });
+
+      if (removedUrls.length > 0) {
+        deleteRemovedBlobs(removedUrls);
+      }
+
+      previousUrlsRef.current = currentUrls;
+
+      onChange?.(editor.document);
+    }, [editor, onChange]);
+
+    const formattingToolbar = useCallback(
+      () => (
+        <CustomFormattingToolbar
+          onTranscribe={handleTranscribe}
+          isTranscribing={isTranscribing}
+        />
+      ),
+      [handleTranscribe, isTranscribing]
     );
 
     useImperativeHandle(
@@ -153,35 +187,26 @@ export const NoteEditor = forwardRef<NoteEditorRef, NoteEditorProps>(
       [editor]
     );
 
-    const handleChange = useCallback(() => {
-      const currentUrls = extractMediaUrls(editor.document);
-
-      const removedUrls: string[] = [];
-
-      previousUrlsRef.current.forEach((url) => {
-        if (!currentUrls.has(url)) {
-          removedUrls.push(url);
-        }
-      });
-
-      if (removedUrls.length > 0) {
-        deleteRemovedBlobs(removedUrls);
+    // Load initial content after editor is ready to avoid position errors
+    useEffect(() => {
+      if (initialContentRef.current && initialContentRef.current.length > 0) {
+        // Use setTimeout to ensure the editor is fully initialized
+        setTimeout(() => {
+          editor.replaceBlocks(editor.document, initialContentRef.current!);
+          setIsContentLoaded(true);
+        }, 0);
+      } else {
+        setIsContentLoaded(true);
       }
+    }, [editor]);
 
-      previousUrlsRef.current = currentUrls;
-
-      onChange?.(editor.document);
-    }, [editor, onChange]);
-
-    const formattingToolbar = useCallback(
-      () => (
-        <CustomFormattingToolbar
-          onTranscribe={handleTranscribe}
-          isTranscribing={isTranscribing}
-        />
-      ),
-      [handleTranscribe, isTranscribing]
-    );
+    if (!isContentLoaded) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">Loading editor...</p>
+        </div>
+      );
+    }
 
     return (
       <BlockNoteView
